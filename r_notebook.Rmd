@@ -3,7 +3,7 @@ title: "Data mining"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r data,include=FALSE}
 library(data.table)
 library(dplyr)
 library(zoo)
@@ -14,9 +14,7 @@ library(plotly)
 library(RColorBrewer)
 library(grDevices)
 library(knitr)
-```
 
-```{r cars000,include=FALSE}
 ####READING DATA!-----
 
 #Reservations: 2 datafiles
@@ -54,11 +52,23 @@ hotdays_rq_nodupl_brokers_byweek <- fread("hotdays_rq_nodupl_week.csv")
 hotdays_reserv_brokers_byday <- fread("hotdays_reserv_broker.csv")
 hotdays_reserv_statustype_byday <- fread("hotdays_reserv_statustype.csv")
 hotdays_reserv_acriss_byday <-fread("hotdays_reserv_acriss.csv")
+hotdays_rq_filtered <-fread("hotdays_rq_filtered.csv")
 ```
 
-```{r cars,eval=FALSE}
+```{r data0,eval=FALSE}
+library(data.table)
+library(dplyr)
+library(zoo)
+library(lubridate)
+library(ggplot2)
+library(readr)
+library(plotly)
+library(RColorBrewer)
+library(grDevices)
+library(knitr)
+
 ####READING DATA
-#Data files made by using Python code and/or sent data from client
+#Data files used were made by using Python code (file Project_notebook.ipynb) and/or was sent by the client
 
 #Reservations: 2 datafiles
 res_view_old <- fread("Reservations_view.csv")[,c(2,3,4,6,7,8,9,14,16,28,31,34,35,36,41)]
@@ -98,7 +108,7 @@ hotdays_reserv_acriss_byday <-fread("hotdays_reserv_acriss.csv")
 ```
 
 Overview of how many days we have in the rate quote (duplicated) data.
-```{r cars1}
+```{r set1}
 tabel_days <- rateq_dup %>% group_by(as.Date(timestamp)) %>% summarise(min=min(timestamp),max=max(timestamp))
 kable(tabel_days,caption = "Rate quotes")
 ```
@@ -106,7 +116,7 @@ kable(tabel_days,caption = "Rate quotes")
 Removing date 2017-12-07, due to the fact that it contains only data with the time period of 9 hours, which is clearly a lot different from other days.
 
 Overview of the reservations data.
-```{r cars1_1,fig.align="center"}
+```{r set2,fig.align="center"}
 tabel_days2 <- reservations %>% group_by(date=as.Date(rate_request_timestamp)) %>% summarise(count=n())
 p_tabel_days2 <- tabel_days2 %>% plot_ly(x=~date,y=~count) %>% add_lines() %>% layout(title="Reservations made")
 p_tabel_days2
@@ -115,7 +125,7 @@ p_tabel_days2
 We can see that there are not many reservations done before 27th of February. For further illustrations, let's cut this part of the data out.
 
 #Filtration
-```{r cars2,fig.align="center"}
+```{r set3,fig.align="center"}
 #Removing date 2017-12-07
 rateq_dup <- rateq_dup[!(as.Date(timestamp)=="2017-12-07"),]
 rateq_filtered <- rateq_filtered[!(as.Date(timestamp)=="2017-12-07"),]
@@ -142,7 +152,7 @@ One can see that the distribution is pretty similar between phase 1 and phase 2 
 
 #Days in advance
 
-```{r cars2_2,fig.align="center"}
+```{r set4,fig.align="center"}
 
 modif_rate <- rateq_dup
 modif_rate$timestamp <- as.Date(modif_rate$timestamp)
@@ -158,7 +168,7 @@ p_days_in_advance_dist
 
 This plot shows how many days in advance customers are checking the prices. We can see that the most popular is first two weeks or three weeks. We can also see a slight bump near 200 days, which is logical because the rate quotes here have been made in december, so ~200 days ahead means checking prices for the summer that is the most popular vacation season. However since we are dealing with data from Iceland, one can see that winter times are very popular as well!
 
-```{r cars3,eval=FALSE}
+```{r set5,eval=FALSE}
 #In case there is more data and one would like to see the same plot within seasons
 yq <- as.yearqtr(as.yearmon(modif_rate$timestamp, "%m/%d/%Y") + 1/12)
 modif_rate$Season <- factor(format(yq, "%q"), levels = 1:4, labels = c("winter", "spring", "summer", "fall"))
@@ -168,7 +178,7 @@ p_by_season_facets
 ```
 
 
-```{r cars4_what,fig.align="center"}
+```{r set6,fig.align="center"}
 modif_res <- reservations
 modif_res$rate_request_timestamp <- as.Date(modif_res$rate_request_timestamp)
 modif_res$pickup_timestamp <- as.Date(modif_res$pickup_timestamp)
@@ -183,7 +193,7 @@ p_days_in_advance_dist_reserv
 
 The plot for reservations made however is slightly different than the price checking plot. Let's look at the days in advance distribution by seasons when the reservation requests were made.
 
-```{r cars4_whatwhat,fig.align="center"}
+```{r set7,fig.align="center"}
 #getting season in case needed
 yq <- as.yearqtr(as.yearmon(modif_res$rate_request_timestamp, "%m/%d/%Y") + 1/12)
 modif_res$Season <- factor(format(yq, "%q"), levels = 1:4, labels = c("WINTER", "SPRING", "SUMMER", "FALL"))
@@ -194,7 +204,7 @@ p_by_season_facets_reserv
 
 One can notice that Winter and Fall are distributed very similarly. One can notice a bump in spring for 100-150 days advance, which means that these reservations are made for the summer season.
 
-```{r cars4,fig.align="center"}
+```{r set8,fig.align="center"}
 bybroker_data_req <-rateq_filtered %>% filter(Broker_name != "RateChain test")%>%group_by(Broker_name,as.factor(as.Date(timestamp))) %>% summarise(count=n())
 bybroker_data_req$`as.factor(as.Date(timestamp))` <- format(as.Date(bybroker_data_req$`as.factor(as.Date(timestamp))`,"%Y-%m-%d"),format="%d. %b")
 picked_colours <- brewer.pal(length(unique(bybroker_data_req$Broker_name)),"Spectral")
@@ -212,7 +222,7 @@ p_bybroker_logscale <- bybroker_data_req %>% plot_ly(x=~`as.factor(as.Date(times
 TravelJigsaw has the most rate quotes, then BSP Auto and after that SupplierWebsite.
 
 
-```{r cars5,fig.align="center"}
+```{r set9,fig.align="center"}
 bybroker_data_res <- reservations %>% group_by(date=as.Date(rate_request_timestamp),`Broker name`) %>% summarise(count=n())
 picked_colours <- brewer.pal(length(unique(bybroker_data_res$`Broker name`)),"Spectral")
 p_bybroker_res <- bybroker_data_res %>% plot_ly(x=~date,y=~count,type="bar",color=~`Broker name`,colors=picked_colours) %>%
@@ -224,7 +234,7 @@ One can notice that TravelJigsaw still has the most reservations, but the second
 
 #Hot days
 
-```{r cars6,fig.align="center"}
+```{r set10,fig.align="center"}
 
 #HOTDAYS-----------------
 #Rate quotes
@@ -234,15 +244,15 @@ hotdays_rq_nodupl_brokers_byday <- hotdays_rq_nodupl_brokers_byday[,-6]#removing
 hotdays_rq_nodupl_brokers_byday$TravelJigsaw <- as.numeric(hotdays_rq_nodupl_brokers_byday$TravelJigsaw)
 ```
 
-```{r cars0333,include=FALSE}
+```{r set11,include=FALSE}
 hotdays_rq_nodupl_brokers_byday <- melt(hotdays_rq_nodupl_brokers_byday)
 ```
 
-```{r cars01333,eval=FALSE}
+```{r set12,eval=FALSE}
 hotdays_rq_nodupl_brokers_byday <- melt(hotdays_rq_nodupl_brokers_byday)
 ```
 
-```{r cars023333,fig.align="center"}
+```{r set13,fig.align="center"}
 hotdays_rq_nodupl_brokers_byday[is.na(hotdays_rq_nodupl_brokers_byday)] <- 0
 
 picked_colours <- brewer.pal(length(unique(hotdays_rq_nodupl_brokers_byday$variable)),"Spectral")
@@ -251,21 +261,21 @@ p_hotdays_rq_brokers_byday <- hotdays_rq_nodupl_brokers_byday %>% plot_ly(x=~tim
 p_hotdays_rq_brokers_byday
 ```
 
-```{r cars7,fig.align="center"}
+```{r set14,fig.align="center"}
 hotdays_rq_nodupl_brokers_byweek <- hotdays_rq_nodupl_brokers_byweek[,-6]#removing ratechain test
 hotdays_rq_nodupl_brokers_byweek$TravelJigsaw <- as.numeric(hotdays_rq_nodupl_brokers_byweek$TravelJigsaw)
 
 ```
 
-```{r cars033,include=FALSE}
+```{r set15,include=FALSE}
 hotdays_rq_nodupl_brokers_byweek <- melt(hotdays_rq_nodupl_brokers_byweek)
 ```
 
-```{r cars0133,eval=FALSE}
+```{r set16,eval=FALSE}
 hotdays_rq_nodupl_brokers_byweek <- melt(hotdays_rq_nodupl_brokers_byweek)
 ```
 
-```{r cars02333,fig.align="center"}
+```{r set17,fig.align="center"}
 hotdays_rq_nodupl_brokers_byweek[is.na(hotdays_rq_nodupl_brokers_byweek)] <- 0
 
 picked_colours <- brewer.pal(length(unique(hotdays_rq_nodupl_brokers_byweek$variable)),"Spectral")
@@ -274,20 +284,20 @@ p_hotdays_rq_brokers_byweek <- hotdays_rq_nodupl_brokers_byweek %>% plot_ly(x=~t
 p_hotdays_rq_brokers_byweek
 ```
 
-```{r cars8,fig.align="center"}
+```{r set18,fig.align="center"}
 hotdays_reserv_brokers_byday <- hotdays_reserv_brokers_byday[,-6]#removing ratechain test
 
 ```
 
-```{r cars03,include=FALSE}
+```{r set19,include=FALSE}
 hotdays_reserv_brokers_byday <- melt(hotdays_reserv_brokers_byday)
 ```
 
-```{r cars013,eval=FALSE}
+```{r set20,eval=FALSE}
 hotdays_reserv_brokers_byday <- melt(hotdays_reserv_brokers_byday)
 ```
 
-```{r cars0233,fig.align="center"}
+```{r set21,fig.align="center"}
 hotdays_reserv_brokers_byday[is.na(hotdays_reserv_brokers_byday)] <- 0
 hotdays_reserv_brokers_byday <-hotdays_reserv_brokers_byday[as.Date(hotdays_reserv_brokers_byday$timestamp) >="2017-02-27",]
 
@@ -297,7 +307,7 @@ p_hotdays_reserv_brokers_byday <- hotdays_reserv_brokers_byday %>% plot_ly(x=~ti
 p_hotdays_reserv_brokers_byday
 ```
 
-```{r cars0_1,include=FALSE}
+```{r set22,include=FALSE}
 hotdays_reserv_acriss_byday <- melt(hotdays_reserv_acriss_byday)
 hotdays_reserv_acriss_byday[is.na(hotdays_reserv_acriss_byday)] <- 0
 
@@ -306,7 +316,7 @@ picked_colours <- brewer.pal(length(unique(hotdays_reserv_acriss_byday$variable)
 
 ```
 
-```{r cars01_,eval=FALSE}
+```{r set23,eval=FALSE}
 hotdays_reserv_acriss_byday <- melt(hotdays_reserv_acriss_byday)
 hotdays_reserv_acriss_byday[is.na(hotdays_reserv_acriss_byday)] <- 0
 
@@ -314,7 +324,7 @@ picked_colours <- brewer.pal(length(unique(hotdays_reserv_acriss_byday$variable)
 
 ```
 
-```{r cars011}
+```{r set24}
 hotdays_reserv_acriss_byday <-hotdays_reserv_acriss_byday[as.Date(hotdays_reserv_acriss_byday$timestamp) >="2017-02-27",]
 p_hotdays_reserv_acriss_byday <- hotdays_reserv_acriss_byday %>% plot_ly(x=~timestamp,y=~value,color=~variable,colors=picked_colours,type="bar") %>% 
   layout(barmode="stack",title="Hot days (reservations) by car type",xaxis=list(title="",type="date"),legend=list(y=0.5,x=0.95),yaxis=list(title="count of reservations"))
@@ -326,15 +336,15 @@ p_hotdays_reserv_acriss_byday
 
 ```
 
-```{r cars0,include=FALSE}
+```{r set25,include=FALSE}
 hotdays_reserv_statustype_byday <- melt(hotdays_reserv_statustype_byday)
 ```
 
-```{r cars01,eval=FALSE}
+```{r set26,eval=FALSE}
 hotdays_reserv_statustype_byday <- melt(hotdays_reserv_statustype_byday)
 ```
 
-```{r cars02}
+```{r set27}
 hotdays_reserv_statustype_byday[is.na(hotdays_reserv_statustype_byday)] <- 0
 hotdays_reserv_statustype_byday <-hotdays_reserv_statustype_byday[as.Date(hotdays_reserv_statustype_byday$timestamp) >="2017-02-27",]
 picked_colours <- brewer.pal(length(unique(hotdays_reserv_statustype_byday$variable)),"Spectral")
@@ -350,5 +360,106 @@ p_by_season_status_type_facets_reserv <-ggplot(modif_res,aes(x=days_in_advance,g
   theme(panel.grid.minor=element_blank(),legend.position = "bottom",plot.title=element_text(hjust=0.5),panel.grid.major.x=element_blank())
 p_by_season_status_type_facets_reserv
 
-
 ```
+
+
+#Rate quotes to reservations ratio
+
+First let's look at the plot where the count of reservations and the count of rate quotes for the same day are shown. Note that in the particular dataset there are no days when the count of reservations is 0, however there are a couple of days when the count of rate quotes is smaller (and even 0) than the count of reservations. It means that the rate quotes were made before 1st of December in 2017. 
+
+Firstly, let's look at rate quotes data, that has been gone through phase 1 (duplicates by uuid have been removed).
+
+```{r set28}
+reservations$rate_request_timestamp <- as.Date(reservations$rate_request_timestamp)
+reservations$pickup_timestamp <- as.Date(reservations$pickup_timestamp)
+res1 <- reservations %>% select(rate_request_timestamp,pickup_timestamp,rental_days,`Broker name`)
+
+
+res <- data.frame(rate_request_timestamp=as.Date(character()),
+                 rented_day_timestamp=as.Date(character()), 
+                 Broker_name=character(), 
+                 uid = integer(),
+                 stringsAsFactors=FALSE) 
+
+lengtht <- nrow(res1)#approx 8 minutes
+for(i in 1:lengtht){
+  lengtht2 <- res1$rental_days[i]
+  for(j in 1:lengtht2){
+    temp <- res1[i,]
+    res[nrow(res)+1,] <- c(as.character(as.Date(temp$rate_request_timestamp)),as.character(as.Date(temp$pickup_timestamp) + j - 1),temp$`Broker name`,i)
+  }
+}
+
+hotdays_rq_nodupl_brokers_byday[is.na(hotdays_rq_nodupl_brokers_byday)] <- 0
+```
+
+```{r set29,include=FALSE}
+rq <- melt(hotdays_rq_nodupl_brokers_byday)
+```
+
+```{r set30,eval=FALSE}
+rq <- melt(hotdays_rq_nodupl_brokers_byday)
+```
+
+```{r set31}
+rq$timestamp <- as.Date(rq$timestamp)
+colnames(rq)[2] <- "Broker_name"
+res <- res %>% filter(as.Date(rate_request_timestamp) >= "2017-12-01") %>%group_by(rented_day_timestamp,Broker_name) %>% summarise(count=n())
+colnames(res)[1] <- "timestamp" 
+rq <- rq[rq$timestamp %in% res$timestamp,]
+all <- merge(rq,res,by=c("timestamp","Broker_name"),all.y = TRUE)
+all <- all %>% filter(Broker_name != "RateChain test")
+print(paste("The data contains rate quotes and reservations to the following time frame:",min(as.Date(all$timestamp)),"to",max(as.Date(all$timestamp)),"."))
+
+test <- all %>% select(value,count,timestamp) %>% group_by(timestamp) %>%summarise(count=sum(count),value=sum(value))
+plot1 <- ggplot(test,aes(x=count,y=value))+geom_point()+labs(x="count of reservations",y="count of rate quotes",title="Rate quotes and reservations relation on phase 1 filtrated data")+theme_bw()+theme(plot.title=element_text(hjust=0.5))
+plot1
+```
+
+One can see a relation between the two variables. Now let's look at the relation when we are using rate quote data that has gone through phase 2 filtration. 
+
+```{r set32,include=FALSE}
+rq <- melt(hotdays_rq_filtered)
+hotdays_rq_filtered[is.na(hotdays_rq_filtered)] <- 0
+```
+
+```{r set33,eval=FALSE}
+rq <- melt(hotdays_rq_filtered)
+hotdays_rq_filtered[is.na(hotdays_rq_filtered)] <- 0
+```
+
+```{r set34}
+rq$timestamp <- as.Date(rq$timestamp)
+colnames(rq)[2] <- "Broker_name"
+rq <- rq[rq$timestamp %in% res$timestamp,]
+all <- merge(rq,res,by=c("timestamp","Broker_name"),all.y = TRUE)
+all <- all %>% filter(Broker_name != "RateChain test")
+test <- all %>% select(value,count,timestamp) %>% group_by(timestamp) %>%summarise(count=sum(count),value=sum(value))
+plot2 <-ggplot(test,aes(x=count,y=value))+geom_point()+labs(x="count of reservations",y="count of rate quotes",title="Rate quotes and reservations relation on phase 2 filtrated data")+theme_bw()+theme(plot.title=element_text(hjust=0.5))
+plot2
+```
+
+We can see that the y axis values have decreased a lot, but the overall look of the relation is the same. So let's continue using the filtered data. 
+
+```{r set35,fig.align="center"}
+plot3 <-all %>% plot_ly(x=~count,y=~value,color=~Broker_name,type="scatter") %>% layout(title="",xaxis=list(title="count of reservations"),yaxis=list(title="count of rate quotes"))
+plot3
+```
+
+Now I can see that TravelJigsaw has the most rate quotes. Let's calculate the rate quotes to reservation ratio. 
+
+```{r set36,fig.align="center"}
+all$ratio <- all$value/all$count
+all_wo_travel_bsp <- all %>% filter(Broker_name != "TravelJigsaw", Broker_name != "BSP Auto")
+plot4 <-ggplot(all_wo_travel_bsp,aes(x=Broker_name,y=ratio)) + geom_boxplot()+labs(x="",title="Rate quote to reservations ratio")+ theme_bw() + theme(axis.text.x = element_text(angle = 90),plot.title=element_text(hjust=0.5))
+plot4
+
+plot5 <- ggplot(all %>% filter(Broker_name == "TravelJigsaw"),aes(x=Broker_name,y=ratio)) + geom_boxplot()+labs(x="",title="Rate quote to reservations ratio")+ theme_bw()+theme(plot.title=element_text(hjust=0.5))
+plot5
+
+plot6 <- ggplot(all %>% filter(Broker_name == "BSP Auto"),aes(x=Broker_name,y=ratio)) + geom_boxplot()+labs(x="",title="Rate quote to reservations ratio")+ theme_bw()+theme(plot.title=element_text(hjust=0.5))
+plot6
+```
+
+TravelJigsaw has also the most outliers according to the boxplot.
+
